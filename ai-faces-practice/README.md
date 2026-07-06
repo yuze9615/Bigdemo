@@ -76,6 +76,10 @@ source venv/bin/activate
 # Windows:
 .\venv\Scripts\activate
 
+#无法正常激活
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+.\venv\Scripts\activate
+
 # 3. 安装依赖
 pip install -r requirements.txt
 
