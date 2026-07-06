@@ -63,8 +63,9 @@ face_detection_app/
 
 ```bash
 # 1. 克隆项目
-git clone <repository_url>
-cd face_detection_app
+git clone https://github.com/yuze9615/Bigdemo.git
+# 进入项目代码目录
+cd Bigdemo/ai-faces-practice
 
 # 2. 创建虚拟环境
 python -m venv venv
