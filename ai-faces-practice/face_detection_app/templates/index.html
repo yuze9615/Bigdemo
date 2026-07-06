@@ -1,0 +1,1307 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Faces - 人脸识别</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body {
+font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+min-height: 100vh;
+padding: 20px;
+}
+.container {
+max-width: 900px;
+margin: 0 auto;
+background: white;
+border-radius: 12px;
+box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+overflow: hidden;
+}
+.header {
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+color: white;
+padding: 30px;
+text-align: center;
+}
+.header h1 { font-size: 32px; margin-bottom: 10px; }
+.header p { opacity: 0.9; }
+.content { padding: 30px; }
+.upload-section {
+border: 3px dashed #ddd;
+border-radius: 8px;
+padding: 40px;
+text-align: center;
+margin-bottom: 20px;
+}
+.upload-section:hover {
+border-color: #667eea;
+background: #f8f9ff;
+}
+input[type="file"] { display: none; }
+.upload-label {
+display: inline-block;
+padding: 12px 30px;
+background: #667eea;
+color: white;
+border-radius: 6px;
+cursor: pointer;
+font-size: 16px;
+}
+.upload-label:hover { background: #5568d3; }
+.file-name { margin-top: 15px; color: #666; font-size: 14px; }
+.settings-section {
+background: #f8f9fa;
+padding: 20px;
+border-radius: 8px;
+margin-bottom: 20px;
+}
+.setting-label {
+display: flex;
+justify-content: space-between;
+margin-bottom: 8px;
+font-weight: 500;
+}
+.slider {
+  width: 100%;
+  height: 8px;
+  border-radius: 4px;
+  background: #ddd;
+  -webkit-appearance: none;
+  appearance: none;
+}
+.slider::-webkit-slider-thumb {
+  -webkit-appearance: none;
+  appearance: none;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  border: none;
+}
+.slider::-moz-range-thumb {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #667eea;
+  cursor: pointer;
+  border: none;
+}
+.slider::-moz-range-track {
+  height: 8px;
+  border-radius: 4px;
+  background: #ddd;
+}
+.submit-btn {
+width: 100%;
+padding: 15px;
+background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+color: white;
+border: none;
+border-radius: 8px;
+font-size: 18px;
+cursor: pointer;
+}
+.submit-btn:hover { transform: translateY(-2px); }
+.submit-btn:disabled { background: #ccc; cursor: not-allowed; }
+.result-section {
+display: none;
+margin-top: 30px;
+}
+.result-header {
+background: #e8f5e9;
+padding: 20px;
+border-radius: 8px;
+text-align: center;
+margin-bottom: 20px;
+}
+.face-count {
+font-size: 48px;
+font-weight: bold;
+color: #2e7d32;
+}
+.image-box {
+border: 2px solid #eee;
+border-radius: 8px;
+overflow: hidden;
+}
+.image-box img { width: 100%; display: block; }
+.image-box .label {
+padding: 10px;
+text-align: center;
+background: #f5f5f5;
+font-weight: bold;
+}
+.error-message {
+display: none;
+background: #ffebee;
+color: #c62828;
+padding: 15px;
+border-radius: 8px;
+margin-top: 20px;
+}
+.loading {
+display: none;
+text-align: center;
+padding: 30px;
+}
+.spinner {
+border: 4px solid #f3f3f3;
+border-top: 4px solid #667eea;
+border-radius: 50%;
+width: 40px;
+height: 40px;
+animation: spin 1s linear infinite;
+margin: 0 auto;
+}
+@keyframes spin {
+0% { transform: rotate(0deg); }
+100% { transform: rotate(360deg); }
+}
+.camera-section {
+margin-top: 20px;
+padding: 20px;
+background: #f8f9fa;
+border-radius: 8px;
+}
+.camera-divider {
+text-align: center;
+color: #999;
+font-size: 14px;
+margin: 25px 0 15px;
+position: relative;
+}
+.camera-divider::before,
+.camera-divider::after {
+content: "";
+display: inline-block;
+width: 30%;
+height: 1px;
+background: #ddd;
+vertical-align: middle;
+margin: 0 10px;
+}
+.camera-preview {
+width: 100%;
+max-width: 640px;
+margin: 0 auto;
+background: #000;
+border-radius: 8px;
+overflow: hidden;
+position: relative;
+display: none;
+}
+.camera-preview video {
+width: 100%;
+height: 100%;
+display: block;
+object-fit: contain;
+}
+.face-canvas {
+position: absolute;
+top: 0;
+left: 0;
+width: 100%;
+height: 100%;
+pointer-events: none;
+}
+.camera-controls {
+display: flex;
+gap: 10px;
+justify-content: center;
+margin-top: 15px;
+flex-wrap: wrap;
+}
+.camera-btn {
+padding: 12px 24px;
+border: none;
+border-radius: 6px;
+cursor: pointer;
+font-size: 15px;
+color: white;
+}
+.camera-btn.start { background: #667eea; }
+.camera-btn.start:hover { background: #5568d3; }
+.camera-btn.capture { background: #2e7d32; }
+.camera-btn.capture:hover { background: #1b5e20; }
+.camera-btn.stop { background: #c62828; }
+.camera-btn.stop:hover { background: #8e0000; }
+.camera-btn:disabled { background: #ccc; cursor: not-allowed; }
+.camera-status {
+text-align: center;
+color: #666;
+font-size: 13px;
+margin-top: 8px;
+min-height: 18px;
+}
+.tab-bar {
+display: flex;
+gap: 5px;
+margin-bottom: 20px;
+border-bottom: 2px solid #eee;
+}
+.tab-btn {
+flex: 1;
+padding: 14px 20px;
+background: none;
+border: none;
+border-bottom: 3px solid transparent;
+cursor: pointer;
+font-size: 16px;
+color: #999;
+transition: all 0.2s;
+}
+.tab-btn.active {
+color: #667eea;
+border-bottom-color: #667eea;
+font-weight: 600;
+}
+.tab-btn:hover:not(.active) {
+color: #667eea;
+background: #f8f9ff;
+}
+.tab-panel {
+display: none;
+}
+.tab-panel.active {
+display: block;
+}
+.persons-list {
+margin: 15px 0;
+padding: 12px;
+background: #f8f9fa;
+border-radius: 6px;
+max-height: 120px;
+overflow-y: auto;
+}
+.person-tag {
+display: inline-block;
+background: #e3f2fd;
+color: #1565c0;
+padding: 4px 10px;
+border-radius: 12px;
+margin: 3px;
+font-size: 13px;
+}
+.person-tag .del {
+margin-left: 6px;
+cursor: pointer;
+color: #c62828;
+font-weight: bold;
+}
+.register-row {
+display: flex;
+gap: 8px;
+margin-top: 10px;
+}
+.register-row input[type=text] {
+flex: 1;
+padding: 10px;
+border: 1px solid #ddd;
+border-radius: 6px;
+font-size: 14px;
+}
+.register-row button {
+padding: 10px 16px;
+border: none;
+border-radius: 6px;
+background: #667eea;
+color: white;
+cursor: pointer;
+white-space: nowrap;
+}
+.register-row button:disabled { background: #ccc; cursor: not-allowed; }
+.reg-status { font-size: 13px; margin-top: 8px; min-height: 18px; }
+.known-face-tag { color: #1565c0; font-weight: 600; }
+.unknown-face-tag { color: #c62828; }
+
+/* ===== 自动注册弹窗样式 ===== */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.6);
+    z-index: 1000;
+    justify-content: center;
+    align-items: center;
+}
+.modal-overlay.active {
+    display: flex;
+}
+.modal-box {
+    background: white;
+    border-radius: 12px;
+    padding: 30px;
+    max-width: 420px;
+    width: 90%;
+    text-align: center;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+    animation: modalSlideIn 0.3s ease;
+}
+@keyframes modalSlideIn {
+    from { transform: translateY(-30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+.modal-box h3 {
+    font-size: 20px;
+    margin-bottom: 15px;
+    color: #333;
+}
+.modal-box p {
+    color: #666;
+    margin-bottom: 20px;
+    font-size: 14px;
+}
+.modal-face-img {
+    width: 150px;
+    height: 150px;
+    border-radius: 8px;
+    object-fit: cover;
+    margin-bottom: 20px;
+    border: 3px solid #ff1744;
+}
+.modal-btns {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+}
+.modal-btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: 500;
+}
+.modal-btn.cancel {
+    background: #f5f5f5;
+    color: #666;
+}
+.modal-btn.cancel:hover {
+    background: #e0e0e0;
+}
+.modal-btn.confirm {
+    background: #667eea;
+    color: white;
+}
+.modal-btn.confirm:hover {
+    background: #5568d3;
+}
+.modal-input {
+    width: 100%;
+    padding: 12px;
+    border: 2px solid #ddd;
+    border-radius: 6px;
+    font-size: 16px;
+    margin-bottom: 15px;
+    text-align: center;
+}
+.modal-input:focus {
+    outline: none;
+    border-color: #667eea;
+}
+.auto-reg-hint {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(255, 23, 68, 0.9);
+    color: white;
+    padding: 6px 16px;
+    border-radius: 20px;
+    font-size: 13px;
+    display: none;
+    z-index: 10;
+}
+</style>
+</head>
+<body>
+<div class="container">
+<div class="header">
+<h1>🔍 AI Faces 人脸识别</h1>
+<p>基于工业互联网边缘计算的智能人脸检测系统</p>
+</div>
+<div class="content">
+<div class="tab-bar">
+<button type="button" class="tab-btn active" data-tab="image">📁 图片检测</button>
+<button type="button" class="tab-btn" data-tab="camera">📹 摄像头检测</button>
+<button type="button" class="tab-btn" data-tab="recognize">🔍 人脸比对</button>
+</div>
+
+<!-- Tab 1: 图片检测 -->
+<div class="tab-panel active" id="imagePanel">
+<form id="uploadForm">
+<div class="upload-section">
+<input type="file" id="fileInput" accept=".jpg,.jpeg,.png"
+required>
+<label for="fileInput" class="upload-label">📁 选择图片文件
+</label>
+<div class="file-name" id="fileName">未选择文件</div>
+</div>
+<div class="settings-section">
+<div class="setting-label">
+<span>置信度阈值</span>
+<span id="confidenceValue">0.5</span>
+</div>
+<input type="range" id="confidenceSlider" class="slider"
+min="0.1" max="0.9" step="0.05" value="0.5">
+<p style="font-size: 12px; color: #666; margin-top: 5px;">
+数值越低检测越宽松，数值越高越严格
+</p>
+</div>
+<button type="submit" class="submit-btn" id="submitBtn">
+🚀 检测人脸
+</button>
+</form>
+<div class="loading" id="loading">
+<div class="spinner"></div>
+<p style="margin-top: 15px;">正在处理...</p>
+</div>
+<div class="error-message" id="errorMessage"></div>
+<div class="result-section" id="resultSection">
+<div class="result-header">
+<div style="font-size: 18px; color: #666;">检测结果</div>
+<div class="face-count" id="faceCount">0</div>
+<div id="message">未检测到人脸</div>
+<div id="modelInfo" style="margin-top: 10px; color: #666;"></div>
+</div>
+<div class="image-box">
+<img id="resultImage" alt="检测结果">
+<div class="label">📷 检测结果图片</div>
+</div>
+</div>
+</div>
+
+<!-- Tab 2: 摄像头检测 -->
+<div class="tab-panel" id="cameraPanel">
+<div class="camera-section">
+<div class="camera-preview" id="cameraPreview">
+<video id="cameraVideo" autoplay playsinline muted></video>
+<canvas id="faceCanvas" class="face-canvas"></canvas>
+</div>
+<div class="camera-controls">
+<button type="button" class="camera-btn start" id="cameraStartBtn">📹 开启摄像头</button>
+<button type="button" class="camera-btn capture" id="cameraToggleDetectBtn" disabled>▶️ 开始实时检测</button>
+<button type="button" class="camera-btn stop" id="cameraStopBtn" disabled>⏹ 关闭摄像头</button>
+</div>
+<div class="camera-status" id="cameraStatus"></div>
+</div>
+<div class="settings-section">
+<div class="setting-label">
+<span>置信度阈值</span>
+<span id="cameraConfidenceValue">0.5</span>
+</div>
+<input type="range" id="cameraConfidenceSlider" class="slider"
+min="0.1" max="0.9" step="0.05" value="0.5">
+<div class="setting-label" style="margin-top: 15px;">
+<span>检测间隔 (毫秒)</span>
+<span id="intervalValue">800</span>
+</div>
+<input type="range" id="intervalSlider" class="slider"
+min="200" max="2000" step="100" value="800">
+<p style="font-size: 12px; color: #666; margin-top: 5px;">
+数值越小越实时但 CPU 占用越高
+</p>
+<p style="font-size: 12px; color: #666; margin-top: 5px;">
+数值越低检测越宽松，数值越高越严格
+</p>
+</div>
+<div class="loading" id="cameraLoading" style="display:none;">
+<div class="spinner"></div>
+<p style="margin-top: 15px;">正在检测...</p>
+</div>
+<div class="error-message" id="cameraErrorMessage"></div>
+<div class="result-section" id="cameraResultSection">
+<div class="result-header">
+<div style="font-size: 18px; color: #666;">检测结果（实时）</div>
+<div class="face-count" id="cameraFaceCount">0</div>
+<div id="cameraMessage">等待检测...</div>
+<div id="cameraModelInfo" style="margin-top: 10px; color: #666;"></div>
+</div>
+</div>
+</div>
+
+<!-- Tab 3: 人脸比对 -->
+<div class="tab-panel" id="recognizePanel">
+<div style="padding: 10px; background: #fff3e0; border-radius: 6px; margin-bottom: 15px; font-size: 13px; color: #e65100;">
+💡 先注册至少 1 张人脸，开启摄像头即可实时识别身份<br>
+🆕 <b>新功能</b>：未知人脸持续出现 2 秒将自动提示注册
+</div>
+
+<!-- 注册区域 -->
+<div style="padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px;">
+<div style="font-weight: 600; margin-bottom: 8px;">📝 手动注册已知人脸</div>
+<div class="register-row">
+<input type="file" id="regFileInput" accept=".jpg,.jpeg,.png" style="display:none;">
+<button type="button" id="regPickBtn">📁 选择正脸照片</button>
+<input type="text" id="regNameInput" placeholder="输入姓名，如：张三" maxlength="20">
+<button type="button" id="regSubmitBtn">✅ 注册</button>
+</div>
+<div id="regFileName" style="font-size:12px;color:#666;margin-top:6px;">未选择文件</div>
+<div class="reg-status" id="regStatus"></div>
+<div style="margin-top: 10px; font-size: 13px; color: #666;">
+已注册人员 (<span id="personCount">0</span>)：
+</div>
+<div class="persons-list" id="personsList"><span style="color:#999;font-size:13px;">暂无注册人员</span></div>
+</div>
+
+<!-- 摄像头识别区域 -->
+<div class="camera-section">
+<div class="camera-preview" id="recogPreview" style="position:relative;">
+<video id="recogVideo" autoplay playsinline muted></video>
+<canvas id="recogCanvas" class="face-canvas"></canvas>
+<div class="auto-reg-hint" id="autoRegHint">🔴 未知人脸检测中... <span id="autoRegCountdown">2.0</span>s</div>
+</div>
+<div class="camera-controls">
+<button type="button" class="camera-btn start" id="recogStartBtn">📹 开启识别</button>
+<button type="button" class="camera-btn stop" id="recogStopBtn" disabled>⏹ 关闭</button>
+</div>
+<div class="camera-status" id="recogStatus"></div>
+</div>
+<div class="settings-section">
+<div class="setting-label">
+<span>检测间隔 (毫秒)</span>
+<span id="recogIntervalValue">800</span>
+</div>
+<input type="range" id="recogIntervalSlider" class="slider" min="300" max="2000" step="100" value="800">
+</div>
+<div class="error-message" id="recogErrorMessage"></div>
+<div class="result-section" id="recogResultSection">
+<div class="result-header">
+<div style="font-size: 18px; color: #666;">识别结果（实时）</div>
+<div class="face-count" id="recogFaceCount">0</div>
+<div id="recogMessage">等待识别...</div>
+<div id="recogModelInfo" style="margin-top: 10px; color: #666;"></div>
+</div>
+</div>
+</div>
+</div>
+</div>
+
+<!-- ===== 自动注册弹窗 ===== -->
+<div class="modal-overlay" id="autoRegModal">
+    <div class="modal-box" id="modalStep1">
+        <h3>🆕 发现新面孔</h3>
+        <img class="modal-face-img" id="modalFaceImg" src="" alt="人脸截图">
+        <p>检测到未知人脸持续出现，是否将其注册到人脸库？</p>
+        <div class="modal-btns">
+            <button class="modal-btn cancel" onclick="closeAutoRegModal()">❌ 否</button>
+            <button class="modal-btn confirm" onclick="showNameInput()">✅ 是</button>
+        </div>
+    </div>
+    <div class="modal-box" id="modalStep2" style="display:none;">
+        <h3>📝 输入姓名</h3>
+        <img class="modal-face-img" id="modalFaceImg2" src="" alt="人脸截图">
+        <input type="text" class="modal-input" id="modalNameInput" placeholder="请输入姓名" maxlength="20">
+        <div class="modal-btns">
+            <button class="modal-btn cancel" onclick="backToStep1()">⬅️ 返回</button>
+            <button class="modal-btn confirm" onclick="submitAutoRegister()">✅ 确认注册</button>
+        </div>
+    </div>
+</div>
+
+<script>
+const fileInput = document.getElementById('fileInput');
+const fileName = document.getElementById('fileName');
+const uploadForm = document.getElementById('uploadForm');
+const submitBtn = document.getElementById('submitBtn');
+const loading = document.getElementById('loading');
+const errorMessage = document.getElementById('errorMessage');
+const resultSection = document.getElementById('resultSection');
+const faceCount = document.getElementById('faceCount');
+const message = document.getElementById('message');
+const modelInfo = document.getElementById('modelInfo');
+const resultImage = document.getElementById('resultImage');
+const confidenceSlider = document.getElementById('confidenceSlider');
+const confidenceValue = document.getElementById('confidenceValue');
+confidenceSlider.addEventListener('input', () => {
+confidenceValue.textContent = confidenceSlider.value;
+});
+fileInput.addEventListener('change', () => {
+fileName.textContent = fileInput.files[0]?.name || '未选择文件';
+});
+uploadForm.addEventListener('submit', async (e) => {
+e.preventDefault();
+errorMessage.style.display = 'none';
+resultSection.style.display = 'none';
+submitBtn.disabled = true;
+loading.style.display = 'block';
+const formData = new FormData();
+formData.append('file', fileInput.files[0]);
+formData.append('confidence', confidenceSlider.value);
+try {
+const response = await fetch('/upload', {
+method: 'POST',
+body: formData
+});
+const data = await response.json();
+if (!response.ok) {
+throw new Error(data.detail || '处理失败');
+}
+faceCount.textContent = data.face_count;
+message.textContent = data.message;
+modelInfo.textContent = `使用模型: ${data.model}`;
+resultImage.src = `/static/images/${data.result_filename}`;
+resultSection.style.display = 'block';
+} catch (error) {
+errorMessage.textContent = error.message;
+errorMessage.style.display = 'block';
+} finally {
+loading.style.display = 'none';
+submitBtn.disabled = false;
+}
+});
+
+// ===== Tab 切换 =====
+const tabBtns = document.querySelectorAll('.tab-btn');
+const tabPanels = document.querySelectorAll('.tab-panel');
+tabBtns.forEach(btn => {
+btn.addEventListener('click', () => {
+const target = btn.dataset.tab;
+tabBtns.forEach(b => b.classList.toggle('active', b === btn));
+tabPanels.forEach(p => p.classList.toggle('active', p.id === target + 'Panel'));
+if (target !== 'camera') stopCamera();
+if (target !== 'recognize') stopRecog();
+});
+});
+
+// ===== 摄像头实时检测 =====
+const cameraStartBtn = document.getElementById('cameraStartBtn');
+const cameraToggleDetectBtn = document.getElementById('cameraToggleDetectBtn');
+const cameraStopBtn = document.getElementById('cameraStopBtn');
+const cameraPreview = document.getElementById('cameraPreview');
+const cameraVideo = document.getElementById('cameraVideo');
+const cameraStatus = document.getElementById('cameraStatus');
+const cameraConfidenceSlider = document.getElementById('cameraConfidenceSlider');
+const cameraConfidenceValue = document.getElementById('cameraConfidenceValue');
+const intervalSlider = document.getElementById('intervalSlider');
+const intervalValue = document.getElementById('intervalValue');
+const cameraLoading = document.getElementById('cameraLoading');
+const cameraErrorMessage = document.getElementById('cameraErrorMessage');
+const cameraResultSection = document.getElementById('cameraResultSection');
+const cameraFaceCount = document.getElementById('cameraFaceCount');
+const cameraMessage = document.getElementById('cameraMessage');
+const cameraModelInfo = document.getElementById('cameraModelInfo');
+let cameraStream = null;
+let detectTimer = null;
+let isDetecting = false;
+let detectCount = 0;
+let lastDetectTime = 0;
+
+cameraConfidenceSlider.addEventListener('input', () => {
+cameraConfidenceValue.textContent = cameraConfidenceSlider.value;
+});
+intervalSlider.addEventListener('input', () => {
+intervalValue.textContent = intervalSlider.value;
+if (detectTimer) {
+clearInterval(detectTimer);
+startDetectLoop();
+}
+});
+
+function setCameraStatus(text) {
+cameraStatus.textContent = text;
+}
+
+async function startCamera() {
+setCameraStatus('正在请求摄像头权限...');
+try {
+cameraStream = await navigator.mediaDevices.getUserMedia({
+video: { width: { ideal: 640 }, height: { ideal: 480 } },
+audio: false
+});
+cameraVideo.srcObject = cameraStream;
+cameraPreview.style.display = 'block';
+await new Promise(resolve => {
+if (cameraVideo.readyState >= 2) resolve();
+else cameraVideo.onloadedmetadata = () => { cameraVideo.play(); resolve(); };
+});
+faceCanvas.width = cameraVideo.videoWidth;
+faceCanvas.height = cameraVideo.videoHeight;
+faceCanvas.style.width = cameraVideo.videoWidth + 'px';
+faceCanvas.style.height = cameraVideo.videoHeight + 'px';
+cameraStartBtn.disabled = true;
+cameraToggleDetectBtn.disabled = false;
+cameraStopBtn.disabled = false;
+setCameraStatus('摄像头已开启，自动开始实时检测...');
+startDetectLoop();
+} catch (err) {
+setCameraStatus('摄像头开启失败: ' + (err.message || err.name));
+}
+}
+
+function stopCamera() {
+stopDetectLoop();
+if (cameraStream) {
+cameraStream.getTracks().forEach(t => t.stop());
+cameraStream = null;
+}
+cameraVideo.srcObject = null;
+cameraPreview.style.display = 'none';
+cameraStartBtn.disabled = false;
+cameraToggleDetectBtn.disabled = true;
+cameraStopBtn.disabled = true;
+setCameraStatus('摄像头已关闭');
+if (faceCtx) faceCtx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+}
+
+function startDetectLoop() {
+cameraToggleDetectBtn.textContent = '⏸ 暂停检测';
+setCameraStatus('实时检测中...');
+const interval = parseInt(intervalSlider.value, 10);
+detectTimer = setInterval(detectOnce, interval);
+detectOnce();
+}
+
+function stopDetectLoop() {
+if (detectTimer) {
+clearInterval(detectTimer);
+detectTimer = null;
+}
+isDetecting = false;
+cameraToggleDetectBtn.textContent = '▶️ 开始实时检测';
+setCameraStatus('检测已暂停');
+if (faceCtx) faceCtx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+}
+
+cameraToggleDetectBtn.addEventListener('click', () => {
+if (detectTimer) {
+stopDetectLoop();
+} else {
+startDetectLoop();
+}
+});
+
+async function detectOnce() {
+if (!cameraStream || isDetecting) return;
+isDetecting = true;
+cameraErrorMessage.style.display = 'none';
+const vw = cameraVideo.videoWidth;
+const vh = cameraVideo.videoHeight;
+if (!vw || !vh) { isDetecting = false; return; }
+const offCanvas = document.createElement('canvas');
+offCanvas.width = vw;
+offCanvas.height = vh;
+offCanvas.getContext('2d').drawImage(cameraVideo, 0, 0, vw, vh);
+try {
+const blob = await new Promise(resolve => offCanvas.toBlob(resolve, 'image/jpeg', 0.85));
+if (!blob) throw new Error('画面抓取失败');
+const formData = new FormData();
+formData.append('file', blob, 'camera_capture.jpg');
+formData.append('confidence', cameraConfidenceSlider.value);
+const response = await fetch('/detect', {
+method: 'POST',
+body: formData
+});
+if (!response.ok) {
+const err = await response.json().catch(() => ({}));
+throw new Error(err.detail || `HTTP ${response.status}`);
+}
+const data = await response.json();
+if (faceCanvas.width !== vw || faceCanvas.height !== vh) {
+faceCanvas.width = vw;
+faceCanvas.height = vh;
+faceCanvas.style.width = vw + 'px';
+faceCanvas.style.height = vh + 'px';
+}
+drawFaceBoxes(data.faces);
+cameraFaceCount.textContent = data.face_count;
+cameraMessage.textContent = data.face_count > 0
+? `检测到 ${data.face_count} 张人脸`
+: '未检测到人脸';
+cameraModelInfo.textContent = `使用模型: ${data.model}`;
+cameraResultSection.style.display = 'block';
+detectCount++;
+const now = performance.now();
+const fps = lastDetectTime > 0 ? (1000 / (now - lastDetectTime)) : 0;
+setCameraStatus(`实时检测中... 第 ${detectCount} 帧 | ${fps ? '~' + fps.toFixed(1) + ' FPS | ' : ''}${data.face_count} 张人脸`);
+lastDetectTime = now;
+} catch (err) {
+cameraErrorMessage.textContent = err.message;
+cameraErrorMessage.style.display = 'block';
+setCameraStatus('检测失败: ' + err.message);
+} finally {
+isDetecting = false;
+}
+}
+
+// ===== Canvas 实时画框（摄像头检测模式）=====
+const faceCanvas = document.getElementById('faceCanvas');
+const faceCtx = faceCanvas.getContext('2d');
+
+function drawFaceBoxes(faces) {
+    faceCtx.clearRect(0, 0, faceCanvas.width, faceCanvas.height);
+    if (!faces || !faces.length) return;
+    faces.forEach((face, i) => {
+        let { x, y, w, h, confidence } = face;
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+        const targetRatio = 0.75;
+        let newW = h * targetRatio;
+        let newH = h;
+        if (w > newW) {
+            newW = Math.min(newW, w);
+        } else {
+            newW = w;
+            newH = h;
+        }
+        let newX = cx - newW / 2;
+        let newY = cy - newH / 2;
+        newX = Math.max(0, Math.min(newX, faceCanvas.width - newW));
+        newY = Math.max(0, Math.min(newY, faceCanvas.height - newH));
+        newW = Math.min(newW, faceCanvas.width - newX);
+        newH = Math.min(newH, faceCanvas.height - newY);
+        const lineWidth = Math.max(2, Math.min(5, Math.round((newW + newH) / 150)));
+        const fontSize = Math.max(12, Math.min(20, Math.round((newW + newH) / 40)));
+        faceCtx.strokeStyle = '#00ff00';
+        faceCtx.lineWidth = lineWidth;
+        faceCtx.strokeRect(newX, newY, newW, newH);
+        const cornerLen = Math.min(20, Math.round(Math.min(newW, newH) / 4));
+        faceCtx.beginPath();
+        faceCtx.moveTo(newX, newY + cornerLen); faceCtx.lineTo(newX, newY); faceCtx.lineTo(newX + cornerLen, newY);
+        faceCtx.moveTo(newX + newW - cornerLen, newY); faceCtx.lineTo(newX + newW, newY); faceCtx.lineTo(newX + newW, newY + cornerLen);
+        faceCtx.moveTo(newX, newY + newH - cornerLen); faceCtx.lineTo(newX, newY + newH); faceCtx.lineTo(newX + cornerLen, newY + newH);
+        faceCtx.moveTo(newX + newW - cornerLen, newY + newH); faceCtx.lineTo(newX + newW, newY + newH); faceCtx.lineTo(newX + newW, newY + newH - cornerLen);
+        faceCtx.stroke();
+        const label = `Face ${i + 1} ${(confidence * 100).toFixed(0)}%`;
+        faceCtx.font = `bold ${fontSize}px sans-serif`;
+        const textW = faceCtx.measureText(label).width;
+        const labelH = fontSize + 6;
+        faceCtx.fillStyle = 'rgba(0, 200, 0, 0.9)';
+        faceCtx.fillRect(newX, Math.max(0, newY - labelH), textW + 10, labelH);
+        faceCtx.fillStyle = '#ffffff';
+        faceCtx.fillText(label, newX + 5, Math.max(fontSize, newY - 3));
+    });
+}
+
+cameraStartBtn.addEventListener('click', startCamera);
+cameraStopBtn.addEventListener('click', stopCamera);
+window.addEventListener('beforeunload', () => { stopCamera(); stopRecog(); });
+
+// ===== 人脸比对（注册 + 实时识别 + 自动注册）=====
+const regFileInput = document.getElementById('regFileInput');
+const regPickBtn = document.getElementById('regPickBtn');
+const regNameInput = document.getElementById('regNameInput');
+const regSubmitBtn = document.getElementById('regSubmitBtn');
+const regFileName = document.getElementById('regFileName');
+const regStatus = document.getElementById('regStatus');
+const personsList = document.getElementById('personsList');
+const personCount = document.getElementById('personCount');
+
+const recogStartBtn = document.getElementById('recogStartBtn');
+const recogStopBtn = document.getElementById('recogStopBtn');
+const recogPreview = document.getElementById('recogPreview');
+const recogVideo = document.getElementById('recogVideo');
+const recogCanvas = document.getElementById('recogCanvas');
+const recogCtx = recogCanvas.getContext('2d');
+const recogStatus = document.getElementById('recogStatus');
+const recogIntervalSlider = document.getElementById('recogIntervalSlider');
+const recogIntervalValue = document.getElementById('recogIntervalValue');
+const recogErrorMessage = document.getElementById('recogErrorMessage');
+const recogResultSection = document.getElementById('recogResultSection');
+const recogFaceCount = document.getElementById('recogFaceCount');
+const recogMessage = document.getElementById('recogMessage');
+const recogModelInfo = document.getElementById('recogModelInfo');
+
+// 自动注册相关
+const autoRegHint = document.getElementById('autoRegHint');
+const autoRegCountdown = document.getElementById('autoRegCountdown');
+const autoRegModal = document.getElementById('autoRegModal');
+const modalStep1 = document.getElementById('modalStep1');
+const modalStep2 = document.getElementById('modalStep2');
+const modalFaceImg = document.getElementById('modalFaceImg');
+const modalFaceImg2 = document.getElementById('modalFaceImg2');
+const modalNameInput = document.getElementById('modalNameInput');
+
+// 自动注册状态追踪
+let unknownFaceTracker = {
+    startTime: null,
+    faceBox: null,
+    isShowingModal: false,
+    lastFrameBlob: null
+};
+
+let recogStream = null;
+let recogTimer = null;
+let recogIsDetecting = false;
+let regSelectedFile = null;
+
+// 加载人员列表
+async function loadPersons() {
+try {
+const resp = await fetch('/persons');
+const data = await resp.json();
+renderPersons(data.persons || []);
+} catch(e) { renderPersons([]); }
+}
+function renderPersons(persons) {
+personCount.textContent = persons.length;
+if (!persons.length) {
+personsList.innerHTML = '<span style="color:#999;font-size:13px;">暂无注册人员</span>';
+return;
+}
+personsList.innerHTML = persons.map(n =>
+`<span class="person-tag">${n}<span class="del" data-name="${n}">✕</span></span>`
+).join('');
+personsList.querySelectorAll('.del').forEach(el => {
+el.addEventListener('click', async () => {
+const name = el.dataset.name;
+if (!confirm(`确认删除 ${name}?`)) return;
+try {
+await fetch('/persons/' + encodeURIComponent(name), { method: 'DELETE' });
+loadPersons();
+setRegStatus(`已删除 ${name}`, '#c62828');
+} catch(e) { setRegStatus('删除失败', '#c62828'); }
+});
+});
+}
+function setRegStatus(text, color='#333') {
+regStatus.textContent = text;
+regStatus.style.color = color;
+}
+
+regPickBtn.addEventListener('click', () => regFileInput.click());
+regFileInput.addEventListener('change', () => {
+if (regFileInput.files && regFileInput.files[0]) {
+regSelectedFile = regFileInput.files[0];
+regFileName.textContent = '已选择: ' + regSelectedFile.name;
+}
+});
+regSubmitBtn.addEventListener('click', async () => {
+const name = regNameInput.value.trim();
+if (!name) { setRegStatus('请输入姓名', '#c62828'); return; }
+if (!regSelectedFile) { setRegStatus('请选择照片', '#c62828'); return; }
+regSubmitBtn.disabled = true;
+setRegStatus('注册中...', '#666');
+try {
+const fd = new FormData();
+fd.append('file', regSelectedFile);
+fd.append('name', name);
+const resp = await fetch('/register', { method: 'POST', body: fd });
+const data = await resp.json();
+if (!resp.ok) throw new Error(data.detail || '注册失败');
+setRegStatus(data.message, '#2e7d32');
+regNameInput.value = '';
+regFileInput.value = '';
+regSelectedFile = null;
+regFileName.textContent = '未选择文件';
+loadPersons();
+} catch(e) {
+setRegStatus(e.message, '#c62828');
+} finally { regSubmitBtn.disabled = false; }
+});
+
+// 实时识别
+recogIntervalSlider.addEventListener('input', () => {
+recogIntervalValue.textContent = recogIntervalSlider.value;
+if (recogTimer) { clearInterval(recogTimer); startRecogLoop(); }
+});
+
+async function startRecog() {
+recogStatus.textContent = '正在请求摄像头...';
+try {
+recogStream = await navigator.mediaDevices.getUserMedia({
+video: { width: { ideal: 640 }, height: { ideal: 480 } }, audio: false
+});
+recogVideo.srcObject = recogStream;
+recogPreview.style.display = 'block';
+await new Promise(resolve => {
+if (recogVideo.readyState >= 2) resolve();
+else recogVideo.onloadedmetadata = () => { recogVideo.play(); resolve(); };
+});
+recogCanvas.width = recogVideo.videoWidth;
+recogCanvas.height = recogVideo.videoHeight;
+recogCanvas.style.width = recogVideo.videoWidth + 'px';
+recogCanvas.style.height = recogVideo.videoHeight + 'px';
+recogStartBtn.disabled = true;
+recogStopBtn.disabled = false;
+recogStatus.textContent = '实时识别中...';
+// 重置自动注册追踪器
+unknownFaceTracker = { startTime: null, faceBox: null, isShowingModal: false, lastFrameBlob: null };
+startRecogLoop();
+loadPersons();
+} catch(e) {
+recogStatus.textContent = '摄像头开启失败: ' + (e.message || e.name);
+}
+}
+function startRecogLoop() {
+const interval = parseInt(recogIntervalSlider.value, 10);
+recogTimer = setInterval(recogOnce, interval);
+recogOnce();
+}
+function stopRecog() {
+if (recogTimer) { clearInterval(recogTimer); recogTimer = null; }
+if (recogStream) { recogStream.getTracks().forEach(t => t.stop()); recogStream = null; }
+recogVideo.srcObject = null;
+recogPreview.style.display = 'none';
+recogStartBtn.disabled = false;
+recogStopBtn.disabled = true;
+if (recogCtx) recogCtx.clearRect(0, 0, recogCanvas.width, recogCanvas.height);
+recogIsDetecting = false;
+// 隐藏自动注册提示
+autoRegHint.style.display = 'none';
+// 关闭弹窗
+closeAutoRegModal();
+}
+
+// ===== 自动注册核心逻辑 =====
+
+function updateAutoRegHint(unknownFace, elapsed) {
+    if (!unknownFace || unknownFaceTracker.isShowingModal) {
+        autoRegHint.style.display = 'none';
+        return;
+    }
+    autoRegHint.style.display = 'block';
+    const remaining = Math.max(0, 2.0 - elapsed);
+    autoRegCountdown.textContent = remaining.toFixed(1);
+}
+
+function captureFaceBlob(video, box) {
+    // 从视频中截取人脸区域
+    const [x, y, w, h] = box;
+    const canvas = document.createElement('canvas');
+    canvas.width = w;
+    canvas.height = h;
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(video, x, y, w, h, 0, 0, w, h);
+    return canvas.toDataURL('image/jpeg', 0.9);
+}
+
+function showAutoRegModal(faceDataUrl) {
+    unknownFaceTracker.isShowingModal = true;
+    modalFaceImg.src = faceDataUrl;
+    modalFaceImg2.src = faceDataUrl;
+    modalStep1.style.display = 'block';
+    modalStep2.style.display = 'none';
+    modalNameInput.value = '';
+    autoRegModal.classList.add('active');
+    autoRegHint.style.display = 'none';
+}
+
+function closeAutoRegModal() {
+    autoRegModal.classList.remove('active');
+    unknownFaceTracker.isShowingModal = false;
+    unknownFaceTracker.startTime = null;
+    unknownFaceTracker.faceBox = null;
+    unknownFaceTracker.lastFrameBlob = null;
+}
+
+function showNameInput() {
+    modalStep1.style.display = 'none';
+    modalStep2.style.display = 'block';
+    modalNameInput.focus();
+}
+
+function backToStep1() {
+    modalStep2.style.display = 'none';
+    modalStep1.style.display = 'block';
+}
+
+async function submitAutoRegister() {
+    const name = modalNameInput.value.trim();
+    if (!name) {
+        alert('请输入姓名');
+        return;
+    }
+    // 验证姓名格式
+    if (!/^[\u4e00-\u9fa5\w\- ]+$/.test(name)) {
+        alert('姓名只能包含中英文、数字、下划线和空格');
+        return;
+    }
+    
+    // 将 DataURL 转为 Blob
+    const dataUrl = modalFaceImg2.src;
+    const response = await fetch(dataUrl);
+    const blob = await response.blob();
+    
+    // 发送注册请求
+    const fd = new FormData();
+    fd.append('file', blob, 'auto_reg_face.jpg');
+    fd.append('name', name);
+    
+    try {
+        const resp = await fetch('/register', { method: 'POST', body: fd });
+        const data = await resp.json();
+        if (!resp.ok) throw new Error(data.detail || '注册失败');
+        
+        alert(`✅ ${data.message}`);
+        loadPersons();
+        closeAutoRegModal();
+        // 重置追踪器，避免重复触发
+        unknownFaceTracker = { startTime: null, faceBox: null, isShowingModal: false, lastFrameBlob: null };
+    } catch(e) {
+        alert('注册失败: ' + e.message);
+    }
+}
+
+// 监听回车键提交
+modalNameInput.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') submitAutoRegister();
+});
+
+async function recogOnce() {
+if (!recogStream || recogIsDetecting) return;
+recogIsDetecting = true;
+recogErrorMessage.style.display = 'none';
+const vw = recogVideo.videoWidth, vh = recogVideo.videoHeight;
+if (!vw || !vh) { recogIsDetecting = false; return; }
+const offC = document.createElement('canvas');
+offC.width = vw; offC.height = vh;
+offC.getContext('2d').drawImage(recogVideo, 0, 0, vw, vh);
+try {
+const blob = await new Promise(r => offC.toBlob(r, 'image/jpeg', 0.85));
+const fd = new FormData();
+fd.append('file', blob, 'cam.jpg');
+fd.append('confidence', '0.5');
+const resp = await fetch('/recognize', { method: 'POST', body: fd });
+if (!resp.ok) { const e = await resp.json().catch(()=>({})); throw new Error(e.detail||'HTTP '+resp.status); }
+const data = await resp.json();
+
+// 保存当前帧用于截图
+unknownFaceTracker.lastFrameBlob = blob;
+
+if (recogCanvas.width !== vw) { 
+    recogCanvas.width = vw; 
+    recogCanvas.height = vh;
+    recogCanvas.style.width = vw + 'px';
+    recogCanvas.style.height = vh + 'px';
+}
+
+drawRecogBoxes(data.faces);
+recogFaceCount.textContent = data.face_count;
+const known = data.faces ? data.faces.filter(f => f.name !== '未知' && f.name !== '未训练').length : 0;
+recogMessage.textContent = data.trained
+? (data.face_count > 0 ? `识别到 ${known}/${data.face_count} 位已知人员` : '未检测到人脸')
+: '⚠️ 数据库未训练，请先注册人脸';
+recogModelInfo.textContent = `使用模型: ${data.model}`;
+recogResultSection.style.display = 'block';
+
+// ===== 自动注册逻辑 =====
+if (!unknownFaceTracker.isShowingModal && data.trained && data.faces && data.faces.length > 0) {
+    // 找到第一个未知人脸
+    const unknownFace = data.faces.find(f => f.name === '未知' || f.name === '未训练');
+    
+    if (unknownFace) {
+        const now = Date.now();
+        if (!unknownFaceTracker.startTime) {
+            // 开始追踪
+            unknownFaceTracker.startTime = now;
+            unknownFaceTracker.faceBox = unknownFace.box;
+        } else {
+            // 检查是否是同一张脸（位置变化不大）
+            const [prevX, prevY, prevW, prevH] = unknownFaceTracker.faceBox;
+            const [currX, currY, currW, currH] = unknownFace.box;
+            const centerDist = Math.sqrt(Math.pow(prevX + prevW/2 - currX - currW/2, 2) + 
+                                          Math.pow(prevY + prevH/2 - currY - currH/2, 2));
+            const sizeDiff = Math.abs(prevW - currW) + Math.abs(prevH - currH);
+            
+            // 如果位置变化太大，重置追踪
+            if (centerDist > 50 || sizeDiff > 80) {
+                unknownFaceTracker.startTime = now;
+                unknownFaceTracker.faceBox = unknownFace.box;
+            } else {
+                // 持续追踪同一张脸
+                const elapsed = (now - unknownFaceTracker.startTime) / 1000;
+                updateAutoRegHint(unknownFace, elapsed);
+                
+                if (elapsed >= 2.0) {
+                    // 达到 2 秒，触发自动注册弹窗
+                    const faceDataUrl = captureFaceBlob(recogVideo, unknownFace.box);
+                    showAutoRegModal(faceDataUrl);
+                }
+            }
+        }
+    } else {
+        // 没有未知人脸，重置追踪
+        unknownFaceTracker.startTime = null;
+        unknownFaceTracker.faceBox = null;
+        autoRegHint.style.display = 'none';
+    }
+} else if (!unknownFaceTracker.isShowingModal) {
+    // 没有检测到人脸或正在显示弹窗，重置追踪
+    unknownFaceTracker.startTime = null;
+    unknownFaceTracker.faceBox = null;
+    autoRegHint.style.display = 'none';
+}
+
+if (!data.trained) recogStatus.textContent = '请先在上方注册至少 1 张人脸';
+else recogStatus.textContent = `识别中... ${data.face_count} 张人脸`;
+} catch(e) {
+recogErrorMessage.textContent = e.message;
+recogErrorMessage.style.display = 'block';
+recogStatus.textContent = '识别失败';
+} finally { recogIsDetecting = false; }
+}
+
+// ===== Canvas 实时画框（人脸比对识别模式）=====
+function drawRecogBoxes(faces) {
+    recogCtx.clearRect(0, 0, recogCanvas.width, recogCanvas.height);
+    if (!faces || !faces.length) return;
+    
+    faces.forEach(f => {
+        let [x, y, w, h] = f.box;
+        const isKnown = f.name !== '未知' && f.name !== '未训练';
+        const color = isKnown ? '#00c853' : '#ff1744';
+        
+        const cx = x + w / 2;
+        const cy = y + h / 2;
+        const targetRatio = 0.75;
+        let newW = h * targetRatio;
+        let newH = h;
+        
+        if (w > newW) {
+            newW = Math.min(newW, w);
+        } else {
+            newW = w;
+            newH = h;
+        }
+        
+        let newX = cx - newW / 2;
+        let newY = cy - newH / 2;
+        
+        newX = Math.max(0, Math.min(newX, recogCanvas.width - newW));
+        newY = Math.max(0, Math.min(newY, recogCanvas.height - newH));
+        newW = Math.min(newW, recogCanvas.width - newX);
+        newH = Math.min(newH, recogCanvas.height - newY);
+        
+        const lw = Math.max(2, Math.min(5, Math.round((newW + newH) / 150)));
+        const fs = Math.max(12, Math.min(20, Math.round((newW + newH) / 40)));
+        
+        recogCtx.strokeStyle = color;
+        recogCtx.lineWidth = lw;
+        recogCtx.strokeRect(newX, newY, newW, newH);
+        
+        const cornerLen = Math.min(20, Math.round(Math.min(newW, newH) / 4));
+        recogCtx.beginPath();
+        recogCtx.moveTo(newX, newY + cornerLen); recogCtx.lineTo(newX, newY); recogCtx.lineTo(newX + cornerLen, newY);
+        recogCtx.moveTo(newX + newW - cornerLen, newY); recogCtx.lineTo(newX + newW, newY); recogCtx.lineTo(newX + newW, newY + cornerLen);
+        recogCtx.moveTo(newX, newY + newH - cornerLen); recogCtx.lineTo(newX, newY + newH); recogCtx.lineTo(newX + cornerLen, newY + newH);
+        recogCtx.moveTo(newX + newW - cornerLen, newY + newH); recogCtx.lineTo(newX + newW, newY + newH); recogCtx.lineTo(newX + newW, newY + newH - cornerLen);
+        recogCtx.stroke();
+        
+        const confTxt = f.confidence >= 0 ? ` (${f.confidence.toFixed(0)})` : '';
+        const label = f.name + confTxt;
+        recogCtx.font = `bold ${fs}px sans-serif`;
+        const tw = recogCtx.measureText(label).width;
+        const labelH = fs + 6;
+        
+        recogCtx.fillStyle = color;
+        recogCtx.fillRect(newX, Math.max(0, newY - labelH), tw + 10, labelH);
+        recogCtx.fillStyle = '#fff';
+        recogCtx.fillText(label, newX + 5, Math.max(fs, newY - 3));
+    });
+}
+
+recogStartBtn.addEventListener('click', startRecog);
+recogStopBtn.addEventListener('click', stopRecog);
+
+loadPersons();
+</script>
+</body>
+</html>
