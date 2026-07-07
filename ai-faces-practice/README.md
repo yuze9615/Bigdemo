@@ -77,7 +77,9 @@ source venv/bin/activate
 .\venv\Scripts\activate
 
 #无法正常激活
-Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope Process
+python -m pip install --upgrade --force-reinstall pip
+
+#激活虚拟环境
 .\venv\Scripts\activate
 
 # 3. 安装依赖
